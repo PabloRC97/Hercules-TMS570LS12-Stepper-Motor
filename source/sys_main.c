@@ -43,6 +43,9 @@
 
 
 /* USER CODE BEGIN (0) */
+#include "rti.h"
+#include "gio.h"
+#include "sys_core.h"
 /* USER CODE END */
 
 /* Include Files */

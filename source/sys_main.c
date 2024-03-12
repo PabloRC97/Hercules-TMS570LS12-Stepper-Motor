@@ -64,16 +64,97 @@
 */
 
 /* USER CODE BEGIN (2) */
+#define _100US_A_MS 10
+unsigned int timer_100us = 0;
+unsigned int var_rpm = 10;
+int i = 0, j = 0;
+int check = 0;
+float step_degree = 5.625 / 64;
+int posicion_d = 90;
+int posicion_act = 0;
+int n_step = 0;
+int error = 0;
+int home = 0;
+int pasos_medio[8][4] = {
+        { 1, 0, 0, 0 }, { 1, 1, 0, 0 }, { 0, 1, 0, 0 },
+        { 0, 1, 1, 0 }, { 0, 0, 1, 0 }, { 0, 0, 1, 1 },
+        { 0, 0, 0, 1 }, { 1, 0, 0, 1 }
+};
+int trans[4] = { 0, 0, 0, 0 };
+
+void rtiNotification(uint32 notification);
+void delay_timer_100us(unsigned int *timer_local_100us, const unsigned int time_us) {
+    *timer_local_100us = 0;
+
+    rtiStartCounter(rtiCOUNTER_BLOCK0);
+    while (*timer_local_100us < time_us);
+    rtiStopCounter(rtiCOUNTER_BLOCK0);
+}
+unsigned int rpm2T(const unsigned int rpm) {
+    return 146.484375/(float)rpm;
+}
+
+
 /* USER CODE END */
 
-int main(void)
+int main(void
 {
 /* USER CODE BEGIN (3) */
-/* USER CODE END */
+    rtiInit();
+    gioInit();
+
+    rtiEnableNotification(rtiNOTIFICATION_COMPARE0);
+    rtiStartCounter(rtiCOUNTER_BLOCK0);
+//  rtiStopCounter(rtiCOUNTER_BLOCK0);
+    _enable_interrupt_();
+
+
+    while (1) {
+        n_step = posicion_d / step_degree;
+
+        error = n_step - check;
+
+        if (error > 0) {
+            trans[0] = 0;
+            trans[1] = 1;
+            trans[2] = 2;
+            trans[3] = 3;
+        } else {
+            trans[0] = 3;
+            trans[1] = 2;
+            trans[2] = 1;
+            trans[3] = 0;
+        }
+
+        for (i = 0; i < 8; i++) {
+            if (error != 0) {
+
+                gioSetBit(gioPORTA, 0, pasos_medio[i][trans[0]]);
+                gioSetBit(gioPORTA, 1, pasos_medio[i][trans[1]]);
+                gioSetBit(gioPORTA, 2, pasos_medio[i][trans[2]]);
+                gioSetBit(gioPORTA, 5, pasos_medio[i][trans[3]]);
+                delay_timer_100us(&timer_100us, rpm2T(var_rpm));
+//              __delay_cycles(90000);
+
+                if (check < n_step) {
+                    check++;
+                } else {
+                    check--;
+                }
+                error = n_step - check;
+
+            }
+    }
+        home = check;
+    }
+    /* USER CODE END */
 
     return 0;
 }
 
 
 /* USER CODE BEGIN (4) */
+void rtiNotification(uint32 notification) {
+    ++timer_100us;
+}
 /* USER CODE END */
